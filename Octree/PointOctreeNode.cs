@@ -11,12 +11,12 @@ namespace Octree
     using System.Linq;
     using NLog;
 
-    public partial class PointOctree<T>
+    public partial class PointOctree<T, N>
     {
         /// <summary>
         /// A node in a PointOctree
         /// </summary>
-        private class Node
+        public class Node : IOctreeNodeWithPayload<Point, N>
         {
             /// <summary>
             /// The logger
@@ -27,6 +27,8 @@ namespace Octree
             /// Center of this node
             /// </summary>
             public Point Center { get; private set; }
+
+            public N Obj { get; set; }
 
             /// <summary>
             /// Length of the sides of this node
@@ -82,7 +84,7 @@ namespace Octree
             /// <summary>
             /// An object in the octree
             /// </summary>
-            private class OctreeObject
+            protected class OctreeObject
             {
                 /// <summary>
                 /// Object content
@@ -104,6 +106,11 @@ namespace Octree
             public Node(float baseLengthVal, float minSizeVal, Point centerVal)
             {
                 SetValues(baseLengthVal, minSizeVal, centerVal);
+            }
+
+            public Node(float baseLengthVal, float minSizeVal, Point centerVal, N obj)
+            {
+                SetValues(baseLengthVal, minSizeVal, centerVal, obj);
             }
 
             // #### PUBLIC METHODS ####
@@ -217,6 +224,11 @@ namespace Octree
                 }
             }
 
+            //public Node GetNodeFor(T obj)
+            //{
+            //    this._objects.conta
+            //}
+
             /// <summary>
             /// Return objects that are within <paramref name="maxDistance"/> of the specified position.
             /// </summary>
@@ -271,6 +283,20 @@ namespace Octree
                     for (int i = 0; i < 8; i++)
                     {
                         _children[i].GetAll(result);
+                    }
+                }
+            }
+            public void GetAllNodes(List<Node> result)
+            {
+                // add directly contained nodes
+                result.AddRange(_children);
+
+                // add children nodes
+                if (_children != null)
+                {
+                    for (int i = 0; i < 8; i++)
+                    {
+                        _children[i].GetAllNodes(result);
                     }
                 }
             }
@@ -434,6 +460,12 @@ namespace Octree
                 _childBounds[5] = new BoundingBox(Center + new Point(quarter, -quarter, -quarter), childActualSize);
                 _childBounds[6] = new BoundingBox(Center + new Point(-quarter, -quarter, quarter), childActualSize);
                 _childBounds[7] = new BoundingBox(Center + new Point(quarter, -quarter, quarter), childActualSize);
+            }
+
+            private void SetValues(float baseLengthVal, float minSizeVal, Point centerVal, N obj)
+            {
+                Obj = obj;
+                SetValues(baseLengthVal, minSizeVal, centerVal);
             }
 
             /// <summary>
